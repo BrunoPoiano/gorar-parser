@@ -1,0 +1,819 @@
+=== Directory structure ===
+golendar/go.mod
+golendar/utils/utils.go
+golendar/golendar
+golendar/types/types.go
+golendar/src/logs/telegram/telegram.go
+golendar/src/logs/MakeLog.go
+golendar/src/logs/discord/discord.go
+golendar/src/radarr/radarr.go
+golendar/src/sonarr/sonarr.go
+golendar/constants/constants.go
+golendar/main.go
+golendar/config/config.go
+golendar/README.md
+golendar/docker-compose.yaml
+golendar/Dockerfile
+golendar/start.sh
+
+=== golendar/go.mod ===
+module main
+go 1.24.2
+
+=== golendar/utils/utils.go ===
+package utils
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"main/constants"
+	"main/types"
+	"net/http"
+	"os"
+	"time"
+)
+// ReturnEnvVariable returns the value of the environment variable specified by key.
+// If the environment variable is not set, it returns the default_value.
+//
+// Parameters:
+//   - key: the name of the environment variable
+//   - default_value: the value to return if the environment variable is not set
+//
+// Returns:
+//   - string: the value of the environment variable or the default value
+func ReturnEnvVariable(key, default_value string) string {
+	envKey := os.Getenv(key)
+	if envKey == "" {
+		return default_value
+	}
+	return envKey
+}
+// HttpRequest makes an HTTP request using the provided HttpRequest data.
+//
+// Parameters:
+//   - data: an HttpRequest struct containing request details (Method, Url, Body, ApiKey)
+//
+// Returns:
+//   - []byte: the response body
+//   - error: any error encountered during the request
+func HttpRequest(data types.HttpRequest) ([]byte, error) {
+	responseBody := bytes.NewBuffer(data.Body)
+	request, err := http.NewRequest(data.Method, data.Url, responseBody)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Add("Content-Type", "application/json")
+	if data.ApiKey != "" {
+		request.Header.Add("X-Api-Key", data.ApiKey)
+	}
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
+}
+// GetTimeFrame returns a start and end time for a 24-hour period.
+// The start time is the current day at 03:00:00 UTC.
+// The end time is the next day at 02:59:59.999 UTC.
+//
+// Returns:
+//   - string: formatted start time (YYYY-MM-DDT03:00:00.000Z)
+//   - string: formatted end time (YYYY-MM-DDT02:59:59.999Z)
+func GetTimeFrame() (string, string) {
+	now := time.Now()
+	tomorrow := now.AddDate(0, 0, 1)
+	start := fmt.Sprintf("%d-%02d-%02dT%s", now.Year(), now.Month(), now.Day(), constants.DefaultStartTime)
+	end := fmt.Sprintf("%d-%02d-%02dT%s", now.Year(), now.Month(), tomorrow.Day(), constants.DefaultEndTime)
+	return start, end
+}
+// CheckSameDay checks if the provided date string represents the same day as the current day.
+//
+// Parameters:
+//   - dateStr: a date string to be parsed
+//   - parser: the layout string to use for parsing the date
+//
+// Returns:
+//   - bool: true if the date is the same as the current day, false otherwise or if parsing fails
+func CheckSameDay(dateStr, parser string) bool {
+	now := time.Now()
+	date, err := time.Parse(parser, dateStr)
+	if err != nil {
+		return false
+	}
+	return date.Day() == now.Day()
+}
+// SeriesFormat formats season and episode numbers into standard TV series format (S01E02).
+//
+// Parameters:
+//   - season: the season number
+//   - epNumber: the episode number
+//
+// Returns:
+//   - string: formatted season and episode string (e.g., "S01E02")
+func SeriesFormat(season, epNumber int) string {
+	return fmt.Sprintf("S%02dE%02d", season, epNumber)
+}
+
+=== golendar/types/types.go ===
+package types
+type HttpRequest struct {
+	Url    string
+	Method string
+	ApiKey string
+	Body   []byte
+}
+type Config struct {
+	Telegram TelegramRequest
+	Discord  DiscordRequest
+	Sonarr   Sonarr
+	Radarr   Radarr
+}
+type MessageType struct {
+	Message      string
+	PhotoUrl     string
+	PhotoCaption string
+	ParseMode    string
+}
+// ///////////////// Telegram
+type TelegramRequest struct {
+	Bot       string
+	ChatId    string
+	PhotoUrl  string
+	Caption   string
+	ParseMode string
+}
+// ///////////// Discord
+type DiscordRequest struct {
+	Url           string
+	Content       string
+	Username      string
+	EmbedTitle    string
+	EmbedPhotoUrl string
+}
+////////////////////Sonarr
+type Sonarr struct {
+	Url    string
+	ApiKey string
+}
+type SonarrCalendar struct {
+	SeriesId      int    `json:"seriesId"`
+	SeasonNumber  int    `json:"seasonNumber"`
+	EpisodeNumber int    `json:"episodeNumber"`
+	Title         string `json:"title"`
+	AirDate       string `json:"airDate"`
+	AirDateUtc    string `json:"airDateUtc"`
+	Overview      string `json:"overview"`
+	Id            int    `json:"id"`
+}
+type SeriesInfo struct {
+	Title    string      `json:"title"`
+	AirTime  string      `json:"airTime"`
+	Pictures []ImageInfo `json:"images"`
+}
+type ImageInfo struct {
+	CoverType string `json:"coverType"`
+	RemoteUrl string `json:"remoteUrl"`
+}
+//////////////////// Radarr
+type Radarr struct {
+	Url    string
+	ApiKey string
+}
+type RadarrCalendar struct {
+	Title         string `json:"title"`
+	OriginalTitle string `json:"originalTitle"`
+	Overview      string `json:"overview"`
+	InCinemas     string `json:"inCinemas"`
+	ReleaseDate   string `json:"releaseDate"`
+	Id            int    `json:"id"`
+	ImdbId        string `json:"imdbId"`
+}
+
+=== golendar/src/logs/telegram/telegram.go ===
+package telegram
+import (
+	"encoding/json"
+	"fmt"
+	"main/types"
+	"main/utils"
+)
+// SendTelegramPhotoMessage sends a photo message to a Telegram chat
+//
+// Parameters:
+//   - data: Contains the chat ID, bot token, photo URL, and caption for the message
+//
+// Returns:
+//   - None, but prints an error message to console if JSON marshaling fails
+func SendTelegramPhotoMessage(data types.TelegramRequest) {
+	bodyBytes, err := json.Marshal(map[string]string{
+		"chat_id":    data.ChatId,
+		"parse_mode": data.ParseMode,
+		"photo":      data.PhotoUrl,
+		"caption":    data.Caption,
+	})
+	if err != nil {
+		fmt.Println("Error marshaling JSON:", err)
+		return
+	}
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendPhoto", data.Bot)
+	httpRequest := types.HttpRequest{
+		Url:    url,
+		Method: "POST",
+		ApiKey: "",
+		Body:   bodyBytes,
+	}
+	utils.HttpRequest(httpRequest)
+}
+// SendTelegramMessage sends a text message to a Telegram chat
+//
+// Parameters:
+//   - data: Contains the chat ID, bot token, and caption (used as the message text)
+//
+// Returns:
+//   - None, but prints an error message to console if JSON marshaling fails
+func SendTelegramMessage(data types.TelegramRequest) {
+	bodyBytes, err := json.Marshal(map[string]string{
+		"chat_id":    data.ChatId,
+		"parse_mode": data.ParseMode,
+		"text":       data.Caption,
+	})
+	if err != nil {
+		fmt.Println("Error marshaling JSON:", err)
+		return
+	}
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", data.Bot)
+	httpRequest := types.HttpRequest{
+		Url:    url,
+		Method: "POST",
+		ApiKey: "",
+		Body:   bodyBytes,
+	}
+	utils.HttpRequest(httpRequest)
+}
+
+=== golendar/src/logs/MakeLog.go ===
+package logs
+import (
+	"fmt"
+	"main/config"
+	"main/src/logs/discord"
+	"main/src/logs/telegram"
+	"main/types"
+	"time"
+)
+// MakeLog generates a log message and sends notifications to Telegram and Discord
+// if configured.
+//
+// Params:
+//   - log: The log message string
+//   - logObj: Pointer to a MessageType struct containing data for notifications.
+//     If nil, only the simple log is written.
+func MakeLog(log string, logObj *types.MessageType) {
+	// simple Log
+	if log != "" {
+		now := time.Now()
+		timeFormated := fmt.Sprintf("%02d/%02d/%d %02d:%02d:%02d", now.Day(), now.Month(), now.Year(), now.Hour(), now.Minute(), now.Second())
+		println(timeFormated, "|", log)
+	}
+	if logObj == nil {
+		return
+	}
+	// Notification log
+	env, err := config.LoadConfig()
+	if err != nil {
+		return
+	}
+	// Send Telegram Notification
+	if env.Telegram.Bot != "" && env.Telegram.ChatId != "" {
+		telegramObj := types.TelegramRequest{
+			Bot:    env.Telegram.Bot,
+			ChatId: env.Telegram.ChatId,
+		}
+		telegramObj.ParseMode = "markdown"
+		if logObj.ParseMode != "" {
+			telegramObj.ParseMode = logObj.ParseMode
+		}
+		telegramObj.Caption = logObj.Message
+		if logObj.PhotoUrl != "" {
+			telegramObj.PhotoUrl = logObj.PhotoUrl
+			telegram.SendTelegramPhotoMessage(telegramObj)
+		} else {
+			telegram.SendTelegramMessage(telegramObj)
+		}
+	}
+	// Send Discord Notification
+	if env.Discord.Url != "" {
+		discordObj := types.DiscordRequest{
+			Url:      env.Discord.Url,
+			Username: env.Discord.Username,
+		}
+		discordObj.Content = logObj.Message
+		discordObj.EmbedTitle = logObj.PhotoCaption
+		discordObj.EmbedPhotoUrl = logObj.PhotoUrl
+		discord.SendDiscordMessage(discordObj)
+	}
+}
+
+=== golendar/src/logs/discord/discord.go ===
+package discord
+import (
+	"encoding/json"
+	"fmt"
+	"main/types"
+	"main/utils"
+)
+func SendDiscordMessage(data types.DiscordRequest) {
+	var body map[string]interface{}
+	body = map[string]interface{}{
+		"content":  data.Content,
+		"username": data.Username,
+	}
+	if data.EmbedPhotoUrl != "" {
+		body["embeds"] = []interface{}{
+			map[string]interface{}{
+				"title": data.EmbedTitle,
+				"image": map[string]interface{}{
+					"url": data.EmbedPhotoUrl,
+				},
+			},
+		}
+	}
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		fmt.Println("Error marshaling JSON:", err)
+		return
+	}
+	httpRequest := types.HttpRequest{
+		Url:    data.Url,
+		Method: "POST",
+		Body:   bodyBytes,
+	}
+	utils.HttpRequest(httpRequest)
+}
+
+=== golendar/src/radarr/radarr.go ===
+package radarr
+import (
+	"encoding/json"
+	"fmt"
+	"main/constants"
+	"main/src/logs"
+	"main/types"
+	"main/utils"
+)
+// GetAllReleases retrieves all movie releases for the current day from Radarr
+// and sends them as messages via Telegram.
+//
+// Params:
+//   - radarr: Configuration details for the Radarr instance
+//   - telegramBody: Template for Telegram messages with image support
+//
+// Returns: none
+func GetAllReleases(radarr types.Radarr) {
+	start, end := utils.GetTimeFrame()
+	httpRequest := types.HttpRequest{
+		Url:    fmt.Sprintf("%s/api/v3/calendar?start=%s&end=%s&unmonitored=true", radarr.Url, start, end),
+		Method: "GET",
+		ApiKey: radarr.ApiKey,
+		Body:   nil,
+	}
+	responseBody, err := utils.HttpRequest(httpRequest)
+	if err != nil {
+		logs.MakeLog(err.Error(), nil)
+	}
+	calendarParsed, err := parseRadarrCalendar(responseBody)
+	if err != nil {
+		logs.MakeLog(err.Error(), nil)
+	}
+	messageType := types.MessageType{
+		Message: fmt.Sprintf("*Golendar* \nMovies Releasing Today:"),
+	}
+	if len(calendarParsed) > 0 {
+		logs.MakeLog("Golendar | Movies Releasing Today:", &messageType)
+		for _, item := range calendarParsed {
+			log := fmt.Sprintf("%s | %s", item.Title, item.Overview)
+			messageType.Message = fmt.Sprintf("*%s* \n_%s_ \n[%s](https://www.imdb.com/title/%s/)", item.Title, item.Overview, item.Title, item.ImdbId)
+			logs.MakeLog(log, &messageType)
+		}
+	} else {
+		log := ("Golendar | No New Movies Releasing Today")
+		messageType.Message = fmt.Sprintf("*Golendar* \nNo New Movies Releasing Today")
+		logs.MakeLog(log, &messageType)
+	}
+}
+// parseRadarrCalendar parses the Radarr calendar response and filters out
+// movies releasing on the current day.
+//
+// Params:
+//   - data: Raw JSON byte array from Radarr calendar API
+//
+// Returns:
+//   - []types.RadarrCalendar: Slice of movies releasing today
+//   - error: Any error that occurred during parsing
+func parseRadarrCalendar(data []byte) ([]types.RadarrCalendar, error) {
+	var dataParsed []types.RadarrCalendar
+	var returnParsed []types.RadarrCalendar
+	err := json.Unmarshal(data, &dataParsed)
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range dataParsed {
+		if utils.CheckSameDay(item.InCinemas, constants.UTCFormat) {
+			returnParsed = append(returnParsed, item)
+		}
+	}
+	return returnParsed, nil
+}
+
+=== golendar/src/sonarr/sonarr.go ===
+package sonarr
+import (
+	"encoding/json"
+	"fmt"
+	"main/constants"
+	"main/src/logs"
+	"main/types"
+	"main/utils"
+)
+// GetAllReleases fetches TV show episodes that are releasing today from Sonarr
+// and prepares Telegram message content based on the results.
+//
+// Params:
+//   - sonarr: Configuration for the Sonarr API connection
+//   - telegramBody: The Telegram message request object to be populated
+func GetAllReleases(sonarr types.Sonarr) {
+	start, end := utils.GetTimeFrame()
+	httpRequest := types.HttpRequest{
+		Url:    fmt.Sprintf("%s/api/v3/calendar?start=%s&end=%s&unmonitored=true", sonarr.Url, start, end),
+		Method: "GET",
+		ApiKey: sonarr.ApiKey,
+		Body:   nil,
+	}
+	responseBody, err := utils.HttpRequest(httpRequest)
+	if err != nil {
+		logs.MakeLog(err.Error(), nil)
+	}
+	calendarParsed, err := parseSonarrCalendar(responseBody)
+	if err != nil {
+		logs.MakeLog(err.Error(), nil)
+	}
+	messageType := types.MessageType{
+		Message: fmt.Sprintf("*Golendar* \nEpisodes Releasing Today:"),
+	}
+	if len(calendarParsed) > 0 {
+		logs.MakeLog("Golendar | Episodes Releasing Today", &messageType)
+		for _, item := range calendarParsed {
+			seriesParsed, err := getSeriesInfo(sonarr, item)
+			if err != nil {
+				logs.MakeLog(err.Error(), nil)
+				continue
+			}
+			seriesFormat := utils.SeriesFormat(item.SeasonNumber, item.EpisodeNumber)
+			log := fmt.Sprintf("%s (%s) | %s - %s | %s", seriesParsed.Title, seriesParsed.AirTime, seriesFormat, item.Title, item.Overview)
+			messageType.Message = fmt.Sprintf("*%s* (%sh) \n%s - %s \n\n%s", seriesParsed.Title, seriesParsed.AirTime, seriesFormat, item.Title, item.Overview)
+			messageType.PhotoUrl = seriesParsed.Pictures[1].RemoteUrl
+			messageType.PhotoCaption = seriesParsed.Title
+			logs.MakeLog(log, &messageType)
+		}
+	} else {
+		log := "Golendar | No New Series episodes Releasing Today"
+		messageType.Message = fmt.Sprintf("*Golendar* \nNo New Series episodes Releasing Today")
+		logs.MakeLog(log, &messageType)
+	}
+}
+// getSeriesInfo retrieves detailed information about a TV series from Sonarr.
+//
+// Params:
+//   - sonarr: Configuration for the Sonarr API connection
+//   - sonarrCalendar: Calendar item containing the series ID to look up
+//
+// Returns:
+//   - types.SeriesInfo: The parsed series information
+//   - error: Any error encountered during the operation
+func getSeriesInfo(sonarr types.Sonarr, sonarrCalendar types.SonarrCalendar) (types.SeriesInfo, error) {
+	httpRequest := types.HttpRequest{
+		Url:    fmt.Sprintf("%s/api/v3/series/%d", sonarr.Url, sonarrCalendar.SeriesId),
+		Method: "GET",
+		ApiKey: sonarr.ApiKey,
+		Body:   nil,
+	}
+	resp, err := utils.HttpRequest(httpRequest)
+	if err != nil {
+		return types.SeriesInfo{}, err
+	}
+	seriesParsed, err := parseSeriesInfo(resp)
+	if err != nil {
+		return types.SeriesInfo{}, err
+	}
+	return seriesParsed, nil
+}
+// parseRadarrCalendar parses the calendar data from Sonarr and filters items
+// that are releasing today.
+//
+// Params:
+//   - data: Raw JSON bytes from Sonarr API response
+//
+// Returns:
+//   - []types.SonarrCalendar: Array of calendar items releasing today
+//   - error: Any error encountered during parsing
+func parseSonarrCalendar(data []byte) ([]types.SonarrCalendar, error) {
+	var dataParsed []types.SonarrCalendar
+	var returnParsed []types.SonarrCalendar
+	err := json.Unmarshal(data, &dataParsed)
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range dataParsed {
+		if utils.CheckSameDay(item.AirDate, constants.TimeFormat) {
+			returnParsed = append(returnParsed, item)
+		}
+	}
+	return returnParsed, nil
+}
+// parseSeriesInfo unmarshals series information from JSON response.
+//
+// Params:
+//   - data: Raw JSON bytes from Sonarr API response containing series info
+//
+// Returns:
+//   - types.SeriesInfo: The parsed series information
+//   - error: Any error encountered during parsing
+func parseSeriesInfo(data []byte) (types.SeriesInfo, error) {
+	var dataParsed types.SeriesInfo
+	err := json.Unmarshal(data, &dataParsed)
+	if err != nil {
+		return types.SeriesInfo{}, err
+	}
+	return dataParsed, nil
+}
+
+=== golendar/constants/constants.go ===
+package constants
+const (
+    TimeFormat = "2006-01-02"
+    UTCFormat  = "2006-01-02T15:04:05.000Z"
+    
+    DefaultStartTime = "03:00:00.000Z"
+    DefaultEndTime   = "02:59:59.999Z"
+)
+
+=== golendar/main.go ===
+package main
+import (
+	"main/config"
+	"main/src/logs"
+	"main/src/radarr"
+	"main/src/sonarr"
+	"main/types"
+	"sync"
+)
+func main() {
+	// Load application configuration from environment variables or config file
+	env, err := config.LoadConfig()
+	if err != nil {
+		logs.MakeLog("Error loading config", nil)
+		return
+	}
+	// Check if Telegram Bot Token and Chat ID or Discord Webhook URL are configured
+	if (env.Telegram.Bot == "" || env.Telegram.ChatId == "") && (env.Discord.Url == "") {
+		// If none of the notification services are configured, log a message
+		logs.MakeLog("No Notification data available", nil)
+	}
+	// Create a WaitGroup to synchronize concurrent operations
+	var wg sync.WaitGroup
+	// Check if Sonarr API key is configured
+	if env.Sonarr.ApiKey == "" {
+		logs.MakeLog("No API_KEY for sonarr", nil)
+	} else {
+		// Increment the WaitGroup counter before starting the goroutine
+		wg.Add(1)
+		// Start Sonarr release fetching in a separate goroutine
+		go func() {
+			// Initialize Sonarr API client with configuration
+			sonarrObj := types.Sonarr{
+				Url:    env.Sonarr.Url,
+				ApiKey: env.Sonarr.ApiKey,
+			}
+			// Decrement WaitGroup counter when this goroutine completes
+			defer wg.Done()
+			// Fetch and process all TV show releases from Sonarr
+			sonarr.GetAllReleases(sonarrObj)
+		}()
+	}
+	// Check if Radarr API key is configured
+	if env.Radarr.ApiKey == "" {
+		logs.MakeLog("No API_KEY for radarr", nil)
+	} else {
+		// Increment the WaitGroup counter before starting the goroutine
+		wg.Add(1)
+		// Start Radarr release fetching in a separate goroutine
+		go func() {
+			// Initialize Radarr API client with configuration
+			radarrObj := types.Radarr{
+				Url:    env.Radarr.Url,
+				ApiKey: env.Radarr.ApiKey,
+			}
+			// Decrement WaitGroup counter when this goroutine completes
+			defer wg.Done()
+			// Fetch and process all movie releases from Radarr
+			radarr.GetAllReleases(radarrObj)
+		}()
+	}
+	// Wait for all goroutines to complete before exiting
+	wg.Wait()
+}
+
+=== golendar/config/config.go ===
+package config
+import (
+	"main/types"
+	"main/utils"
+)
+func LoadConfig() (*types.Config, error) {
+	return &types.Config{
+		Telegram: types.TelegramRequest{
+			Bot:    utils.ReturnEnvVariable("TELEGRAM_BOT", ""),
+			ChatId: utils.ReturnEnvVariable("TELEGRAM_CHAT_ID", ""),
+		},
+		Sonarr: types.Sonarr{
+			Url:    utils.ReturnEnvVariable("SONARR_URL", "http://localhost:8989"),
+			ApiKey: utils.ReturnEnvVariable("SONARR_API_KEY", ""),
+		},
+		Radarr: types.Radarr{
+			Url:    utils.ReturnEnvVariable("RADARR_URL", "http://localhost:7878"),
+			ApiKey: utils.ReturnEnvVariable("RADARR_API_KEY", ""),
+		},
+		Discord: types.DiscordRequest{
+			Url:      utils.ReturnEnvVariable("DISCORD_URL", ""),
+			Username: utils.ReturnEnvVariable("DISCORD_USERNAME", "Golendar"),
+		},
+	}, nil
+}
+
+=== golendar/README.md ===
+# Golendar
+Golendar is a lightweight, Go-based notification service that integrates with Sonarr and Radarr media management systems. It delivers daily updates at 8:00 AM via Telegram, keeping you informed about the series episodes and movies being released that day.
+## Features
+- Daily notifications at 8:00 AM
+- TV show episode release notifications via Sonarr integration
+- Movie release notifications via Radarr integration
+- Message delivery with:
+  - TV show details including season and episode information
+  - Movie information with IMDB links
+  - Show artwork/photos (when available)
+  - Release overviews and descriptions
+## Prerequisites
+- Go 1.24.2 or higher
+- A Telegram bot and chat ID
+- Sonarr and/or Radarr installation with API access
+- Docker (optional, for containerized deployment)
+## Usage
+### Using Docker (Recommended)
+You can find the Docker image here: [golendar image](https://hub.docker.com/r/brunopoiano/golendar)
+#### Option 1: Pull from Docker Hub
+```bash
+docker run -d --name golendar --restart unless-stopped -e TZ=America/Sao_Paulo -e TELEGRAM_BOT="your_bot_token" -e TELEGRAM_CHAT_ID="your_chat_id" -e DISCORD_URL="discord_webhook_url" -e DISCORD_USERNAME="Golendar" -e SONARR_URL="sonarr_url" -e SONARR_API_KEY="sonarr_api_key" -e RADARR_URL="radarr_url" -e RADARR_API_KEY="radarr_api_key"  docker.io/brunopoiano/golendar
+```
+#### Option 2: Using Docker Compose
+```bash
+git clone https://github.com/BrunoPoiano/golendar.git
+cd golendar
+# update the environment variables on docker-compose.yaml file
+docker compose up -d
+```
+### Manual Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/BrunoPoiano/golendar.git
+   cd golendar
+   ```
+2. Set up your environment variables
+3. Test the application:
+   ```bash
+   go run .
+   ```
+4. Build the application:
+   ```bash
+   go build -o golendar
+   ```
+5. Run the application:
+   ```bash
+   ./golendar
+   ```
+## Configuration
+The application uses environment variables for configuration. You can set these directly in your environment or use the docker-compose.yaml file if running with Docker.
+### Sonarr Configuration
+- `SONARR_URL` - URL of your Sonarr instance (default: http://localhost:8989)
+- `SONARR_API_KEY` - Your Sonarr API key
+### Radarr Configuration
+- `RADARR_URL` - URL of your Radarr instance (default: http://localhost:7878)
+- `RADARR_API_KEY` - Your Radarr API key
+### Discord Configuration
+- `DISCORD_URL` - Your Discord webhook URL
+- `DISCORD_USERNAME` - The username for the bot in Discord (default: Golendar)
+### Telegram Configuration
+- `TELEGRAM_BOT` - Your Telegram bot token
+- `TELEGRAM_CHAT_ID` - The chat ID where notifications will be sent
+docker build . --no-cache -t brunopoiano/teste
+docker run -d -p 8080:8080 --name ofxvisualizer  brunopoiano/ofxvisualizer
+
+=== golendar/.dockerignore ===
+# Ignore development and version control files
+.git
+.gitignore
+.gitattributes
+.github
+.editorconfig
+# Ignore node modules and logs
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.npm
+.yarn
+# Ignore environment files
+.env
+.env.*
+*.env
+.envrc
+# Ignore build artifacts
+dist
+build
+out
+*.log
+# Ignore Docker-related files
+Dockerfile*
+docker-compose*
+.docker
+# Ignore package files
+*.tar
+*.gz
+*.zip
+*.rar
+# Ignore documentation
+README.md
+LICENSE
+docs
+*.md
+# Ignore test files
+test
+tests
+__tests__
+*.test.js
+*.spec.js
+# Ignore configuration files
+.vscode
+.idea
+.DS_Store
+*.swp
+*.swo
+*~
+
+=== golendar/docker-compose.yaml ===
+services:
+  golendar:
+    build: .
+    environment:
+      TZ: America/Sao_Paulo
+      TELEGRAM_BOT: "your_bot_token"
+      TELEGRAM_CHAT_ID: "your_chat_id"
+      SONARR_URL: "sonarr_url" #Default: http://localhost:8989
+      SONARR_API_KEY: "sonarr_api_key"
+      RADARR_URL: "radarr_url" #Default: http://localhost:7878
+      RADARR_API_KEY: "radarr_api_key"
+    restart: unless-stopped
+    container_name: golendar
+
+=== golendar/Dockerfile ===
+FROM golang:1.24.2-alpine3.21 AS builder
+# Set the working directory for the build stage
+WORKDIR /build
+# Copy only files needed for building
+COPY . .
+# Build the Go application with static linking to reduce dependencies
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o golendar .
+# Use a smaller Alpine base for the final image
+FROM alpine:3.21
+# Set the working directory for the application
+WORKDIR /app/golendar
+# Install only the necessary packages in a single RUN to reduce layers
+RUN apk add --no-cache dcron tzdata && \
+  echo "0 8 * * * /app/golendar/golendar >> /var/log/cron.log 2>&1" > /etc/crontabs/root && \
+  touch /var/log/cron.log
+# Copy only the compiled binary from the builder stage
+COPY --from=builder /build/golendar ./
+# Copy startup script and make it executable
+COPY start.sh ./
+RUN chmod +x ./start.sh
+# Execute the startup script when container launches
+CMD ["/bin/sh", "./start.sh"]
+
+=== golendar/start.sh ===
+#!/bin/sh
+crond
+tail -f /var/log/cron.log
