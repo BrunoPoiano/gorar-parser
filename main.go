@@ -1,71 +1,47 @@
 package main
 
 import (
-	"os"
-	"strings"
-	"unicode/utf8"
-
-	"github.com/gen2brain/go-unarr"
+	"fmt"
+	"io"
+	"log"
+	"main/parsed"
+	"net/http"
 )
 
-func main() {
-	rarFile, err := unarr.NewArchive("./tests/golendar.zip")
-	if err != nil {
-		panic(err)
-	}
-	defer rarFile.Close()
+func postParseFile(w http.ResponseWriter, r *http.Request) {
 
-	list, err := rarFile.List()
+	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
-		panic(err)
+		http.Error(w, "Unable to parse file", http.StatusBadRequest)
+		return
 	}
 
-	file, err := os.Create("file.txt")
-	if err != nil {
-		panic(err)
+	files := r.MultipartForm.File["file"]
+
+	if len(files) == 0 {
+		http.Error(w, "No files uploaded", http.StatusBadRequest)
+		return
 	}
 
-	file.WriteString("=== Directory structure ===\n")
+	file, err := parsed.Parsed(files[0])
+	if err != nil {
+		http.Error(w, "Error processing file: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	defer file.Close()
-	for _, item := range list {
 
-		data, err := rarFile.ReadAll()
-		if err != nil {
-			panic(err)
-		}
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.txt"`, file.Name()))
 
-		if strings.Contains(item, "/.") || !utf8.ValidString(string(data)) {
-			continue
-		}
-		file.WriteString(item + "\n")
-	}
+	io.Copy(w, file)
+}
 
-	for _, item := range list {
-		if strings.Contains(item, "/.git") {
-			continue
-		}
+func main() {
 
-		err := rarFile.EntryFor(item)
-		if err != nil {
-			panic(err)
-		}
+	http.HandleFunc("/parse-file", postParseFile)
 
-		data, err := rarFile.ReadAll()
-		if err != nil {
-			panic(err)
-		}
+	log.Fatal(http.ListenAndServe(":3333", nil))
+	fmt.Printf("Server on port 3333\n")
 
-		if utf8.ValidString(string(data)) {
-			file.WriteString("\n=== " + item + " ===\n")
-
-			for _, line := range strings.Split(string(data), "\n") {
-				if line == "" {
-					continue
-				}
-
-				file.WriteString(line + "\n")
-			}
-		}
-	}
 }

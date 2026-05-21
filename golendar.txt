@@ -32,15 +32,6 @@ import (
 	"os"
 	"time"
 )
-// ReturnEnvVariable returns the value of the environment variable specified by key.
-// If the environment variable is not set, it returns the default_value.
-//
-// Parameters:
-//   - key: the name of the environment variable
-//   - default_value: the value to return if the environment variable is not set
-//
-// Returns:
-//   - string: the value of the environment variable or the default value
 func ReturnEnvVariable(key, default_value string) string {
 	envKey := os.Getenv(key)
 	if envKey == "" {
@@ -48,14 +39,6 @@ func ReturnEnvVariable(key, default_value string) string {
 	}
 	return envKey
 }
-// HttpRequest makes an HTTP request using the provided HttpRequest data.
-//
-// Parameters:
-//   - data: an HttpRequest struct containing request details (Method, Url, Body, ApiKey)
-//
-// Returns:
-//   - []byte: the response body
-//   - error: any error encountered during the request
 func HttpRequest(data types.HttpRequest) ([]byte, error) {
 	responseBody := bytes.NewBuffer(data.Body)
 	request, err := http.NewRequest(data.Method, data.Url, responseBody)
@@ -77,13 +60,6 @@ func HttpRequest(data types.HttpRequest) ([]byte, error) {
 	}
 	return body, nil
 }
-// GetTimeFrame returns a start and end time for a 24-hour period.
-// The start time is the current day at 03:00:00 UTC.
-// The end time is the next day at 02:59:59.999 UTC.
-//
-// Returns:
-//   - string: formatted start time (YYYY-MM-DDT03:00:00.000Z)
-//   - string: formatted end time (YYYY-MM-DDT02:59:59.999Z)
 func GetTimeFrame() (string, string) {
 	now := time.Now()
 	tomorrow := now.AddDate(0, 0, 1)
@@ -91,14 +67,6 @@ func GetTimeFrame() (string, string) {
 	end := fmt.Sprintf("%d-%02d-%02dT%s", now.Year(), now.Month(), tomorrow.Day(), constants.DefaultEndTime)
 	return start, end
 }
-// CheckSameDay checks if the provided date string represents the same day as the current day.
-//
-// Parameters:
-//   - dateStr: a date string to be parsed
-//   - parser: the layout string to use for parsing the date
-//
-// Returns:
-//   - bool: true if the date is the same as the current day, false otherwise or if parsing fails
 func CheckSameDay(dateStr, parser string) bool {
 	now := time.Now()
 	date, err := time.Parse(parser, dateStr)
@@ -107,14 +75,6 @@ func CheckSameDay(dateStr, parser string) bool {
 	}
 	return date.Day() == now.Day()
 }
-// SeriesFormat formats season and episode numbers into standard TV series format (S01E02).
-//
-// Parameters:
-//   - season: the season number
-//   - epNumber: the episode number
-//
-// Returns:
-//   - string: formatted season and episode string (e.g., "S01E02")
 func SeriesFormat(season, epNumber int) string {
 	return fmt.Sprintf("S%02dE%02d", season, epNumber)
 }
@@ -139,7 +99,6 @@ type MessageType struct {
 	PhotoCaption string
 	ParseMode    string
 }
-// ///////////////// Telegram
 type TelegramRequest struct {
 	Bot       string
 	ChatId    string
@@ -147,7 +106,6 @@ type TelegramRequest struct {
 	Caption   string
 	ParseMode string
 }
-// ///////////// Discord
 type DiscordRequest struct {
 	Url           string
 	Content       string
@@ -155,7 +113,6 @@ type DiscordRequest struct {
 	EmbedTitle    string
 	EmbedPhotoUrl string
 }
-////////////////////Sonarr
 type Sonarr struct {
 	Url    string
 	ApiKey string
@@ -179,7 +136,6 @@ type ImageInfo struct {
 	CoverType string `json:"coverType"`
 	RemoteUrl string `json:"remoteUrl"`
 }
-//////////////////// Radarr
 type Radarr struct {
 	Url    string
 	ApiKey string
@@ -202,13 +158,6 @@ import (
 	"main/types"
 	"main/utils"
 )
-// SendTelegramPhotoMessage sends a photo message to a Telegram chat
-//
-// Parameters:
-//   - data: Contains the chat ID, bot token, photo URL, and caption for the message
-//
-// Returns:
-//   - None, but prints an error message to console if JSON marshaling fails
 func SendTelegramPhotoMessage(data types.TelegramRequest) {
 	bodyBytes, err := json.Marshal(map[string]string{
 		"chat_id":    data.ChatId,
@@ -229,13 +178,6 @@ func SendTelegramPhotoMessage(data types.TelegramRequest) {
 	}
 	utils.HttpRequest(httpRequest)
 }
-// SendTelegramMessage sends a text message to a Telegram chat
-//
-// Parameters:
-//   - data: Contains the chat ID, bot token, and caption (used as the message text)
-//
-// Returns:
-//   - None, but prints an error message to console if JSON marshaling fails
 func SendTelegramMessage(data types.TelegramRequest) {
 	bodyBytes, err := json.Marshal(map[string]string{
 		"chat_id":    data.ChatId,
@@ -266,13 +208,6 @@ import (
 	"main/types"
 	"time"
 )
-// MakeLog generates a log message and sends notifications to Telegram and Discord
-// if configured.
-//
-// Params:
-//   - log: The log message string
-//   - logObj: Pointer to a MessageType struct containing data for notifications.
-//     If nil, only the simple log is written.
 func MakeLog(log string, logObj *types.MessageType) {
 	// simple Log
 	if log != "" {
@@ -366,14 +301,6 @@ import (
 	"main/types"
 	"main/utils"
 )
-// GetAllReleases retrieves all movie releases for the current day from Radarr
-// and sends them as messages via Telegram.
-//
-// Params:
-//   - radarr: Configuration details for the Radarr instance
-//   - telegramBody: Template for Telegram messages with image support
-//
-// Returns: none
 func GetAllReleases(radarr types.Radarr) {
 	start, end := utils.GetTimeFrame()
 	httpRequest := types.HttpRequest{
@@ -406,15 +333,6 @@ func GetAllReleases(radarr types.Radarr) {
 		logs.MakeLog(log, &messageType)
 	}
 }
-// parseRadarrCalendar parses the Radarr calendar response and filters out
-// movies releasing on the current day.
-//
-// Params:
-//   - data: Raw JSON byte array from Radarr calendar API
-//
-// Returns:
-//   - []types.RadarrCalendar: Slice of movies releasing today
-//   - error: Any error that occurred during parsing
 func parseRadarrCalendar(data []byte) ([]types.RadarrCalendar, error) {
 	var dataParsed []types.RadarrCalendar
 	var returnParsed []types.RadarrCalendar
@@ -440,12 +358,6 @@ import (
 	"main/types"
 	"main/utils"
 )
-// GetAllReleases fetches TV show episodes that are releasing today from Sonarr
-// and prepares Telegram message content based on the results.
-//
-// Params:
-//   - sonarr: Configuration for the Sonarr API connection
-//   - telegramBody: The Telegram message request object to be populated
 func GetAllReleases(sonarr types.Sonarr) {
 	start, end := utils.GetTimeFrame()
 	httpRequest := types.HttpRequest{
@@ -486,15 +398,6 @@ func GetAllReleases(sonarr types.Sonarr) {
 		logs.MakeLog(log, &messageType)
 	}
 }
-// getSeriesInfo retrieves detailed information about a TV series from Sonarr.
-//
-// Params:
-//   - sonarr: Configuration for the Sonarr API connection
-//   - sonarrCalendar: Calendar item containing the series ID to look up
-//
-// Returns:
-//   - types.SeriesInfo: The parsed series information
-//   - error: Any error encountered during the operation
 func getSeriesInfo(sonarr types.Sonarr, sonarrCalendar types.SonarrCalendar) (types.SeriesInfo, error) {
 	httpRequest := types.HttpRequest{
 		Url:    fmt.Sprintf("%s/api/v3/series/%d", sonarr.Url, sonarrCalendar.SeriesId),
@@ -512,15 +415,6 @@ func getSeriesInfo(sonarr types.Sonarr, sonarrCalendar types.SonarrCalendar) (ty
 	}
 	return seriesParsed, nil
 }
-// parseRadarrCalendar parses the calendar data from Sonarr and filters items
-// that are releasing today.
-//
-// Params:
-//   - data: Raw JSON bytes from Sonarr API response
-//
-// Returns:
-//   - []types.SonarrCalendar: Array of calendar items releasing today
-//   - error: Any error encountered during parsing
 func parseSonarrCalendar(data []byte) ([]types.SonarrCalendar, error) {
 	var dataParsed []types.SonarrCalendar
 	var returnParsed []types.SonarrCalendar
@@ -535,14 +429,6 @@ func parseSonarrCalendar(data []byte) ([]types.SonarrCalendar, error) {
 	}
 	return returnParsed, nil
 }
-// parseSeriesInfo unmarshals series information from JSON response.
-//
-// Params:
-//   - data: Raw JSON bytes from Sonarr API response containing series info
-//
-// Returns:
-//   - types.SeriesInfo: The parsed series information
-//   - error: Any error encountered during parsing
 func parseSeriesInfo(data []byte) (types.SeriesInfo, error) {
 	var dataParsed types.SeriesInfo
 	err := json.Unmarshal(data, &dataParsed)
@@ -656,9 +542,7 @@ func LoadConfig() (*types.Config, error) {
 }
 
 === golendar/README.md ===
-# Golendar
 Golendar is a lightweight, Go-based notification service that integrates with Sonarr and Radarr media management systems. It delivers daily updates at 8:00 AM via Telegram, keeping you informed about the series episodes and movies being released that day.
-## Features
 - Daily notifications at 8:00 AM
 - TV show episode release notifications via Sonarr integration
 - Movie release notifications via Radarr integration
@@ -667,26 +551,19 @@ Golendar is a lightweight, Go-based notification service that integrates with So
   - Movie information with IMDB links
   - Show artwork/photos (when available)
   - Release overviews and descriptions
-## Prerequisites
 - Go 1.24.2 or higher
 - A Telegram bot and chat ID
 - Sonarr and/or Radarr installation with API access
 - Docker (optional, for containerized deployment)
-## Usage
-### Using Docker (Recommended)
 You can find the Docker image here: [golendar image](https://hub.docker.com/r/brunopoiano/golendar)
-#### Option 1: Pull from Docker Hub
 ```bash
 docker run -d --name golendar --restart unless-stopped -e TZ=America/Sao_Paulo -e TELEGRAM_BOT="your_bot_token" -e TELEGRAM_CHAT_ID="your_chat_id" -e DISCORD_URL="discord_webhook_url" -e DISCORD_USERNAME="Golendar" -e SONARR_URL="sonarr_url" -e SONARR_API_KEY="sonarr_api_key" -e RADARR_URL="radarr_url" -e RADARR_API_KEY="radarr_api_key"  docker.io/brunopoiano/golendar
 ```
-#### Option 2: Using Docker Compose
 ```bash
 git clone https://github.com/BrunoPoiano/golendar.git
 cd golendar
-# update the environment variables on docker-compose.yaml file
 docker compose up -d
 ```
-### Manual Installation
 1. Clone the repository:
    ```bash
    git clone https://github.com/BrunoPoiano/golendar.git
@@ -705,68 +582,54 @@ docker compose up -d
    ```bash
    ./golendar
    ```
-## Configuration
 The application uses environment variables for configuration. You can set these directly in your environment or use the docker-compose.yaml file if running with Docker.
-### Sonarr Configuration
 - `SONARR_URL` - URL of your Sonarr instance (default: http://localhost:8989)
 - `SONARR_API_KEY` - Your Sonarr API key
-### Radarr Configuration
 - `RADARR_URL` - URL of your Radarr instance (default: http://localhost:7878)
 - `RADARR_API_KEY` - Your Radarr API key
-### Discord Configuration
 - `DISCORD_URL` - Your Discord webhook URL
 - `DISCORD_USERNAME` - The username for the bot in Discord (default: Golendar)
-### Telegram Configuration
 - `TELEGRAM_BOT` - Your Telegram bot token
 - `TELEGRAM_CHAT_ID` - The chat ID where notifications will be sent
 docker build . --no-cache -t brunopoiano/teste
 docker run -d -p 8080:8080 --name ofxvisualizer  brunopoiano/ofxvisualizer
 
 === golendar/.dockerignore ===
-# Ignore development and version control files
 .git
 .gitignore
 .gitattributes
 .github
 .editorconfig
-# Ignore node modules and logs
 node_modules
 npm-debug.log
 yarn-debug.log
 yarn-error.log
 .npm
 .yarn
-# Ignore environment files
 .env
 .env.*
 *.env
 .envrc
-# Ignore build artifacts
 dist
 build
 out
 *.log
-# Ignore Docker-related files
 Dockerfile*
 docker-compose*
 .docker
-# Ignore package files
 *.tar
 *.gz
 *.zip
 *.rar
-# Ignore documentation
 README.md
 LICENSE
 docs
 *.md
-# Ignore test files
 test
 tests
 __tests__
 *.test.js
 *.spec.js
-# Ignore configuration files
 .vscode
 .idea
 .DS_Store
@@ -791,26 +654,17 @@ services:
 
 === golendar/Dockerfile ===
 FROM golang:1.24.2-alpine3.21 AS builder
-# Set the working directory for the build stage
 WORKDIR /build
-# Copy only files needed for building
 COPY . .
-# Build the Go application with static linking to reduce dependencies
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o golendar .
-# Use a smaller Alpine base for the final image
 FROM alpine:3.21
-# Set the working directory for the application
 WORKDIR /app/golendar
-# Install only the necessary packages in a single RUN to reduce layers
 RUN apk add --no-cache dcron tzdata && \
   echo "0 8 * * * /app/golendar/golendar >> /var/log/cron.log 2>&1" > /etc/crontabs/root && \
   touch /var/log/cron.log
-# Copy only the compiled binary from the builder stage
 COPY --from=builder /build/golendar ./
-# Copy startup script and make it executable
 COPY start.sh ./
 RUN chmod +x ./start.sh
-# Execute the startup script when container launches
 CMD ["/bin/sh", "./start.sh"]
 
 === golendar/start.sh ===
