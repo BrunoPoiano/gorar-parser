@@ -9,6 +9,9 @@ import (
 
 func PostParseFile(w http.ResponseWriter, r *http.Request) {
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Max-Age", "15")
+
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
 		http.Error(w, "Unable to parse file", http.StatusBadRequest)
@@ -27,11 +30,9 @@ func PostParseFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error processing file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, file.Name()))
 
 	defer file.Close()
-
-	w.Header().Set("Content-Type", "text/plain")
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, file.Name()))
 
 	io.Copy(w, file)
 }

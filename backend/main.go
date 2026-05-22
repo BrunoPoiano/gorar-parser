@@ -10,6 +10,6 @@ import (
 func main() {
 	http.HandleFunc("/parse", parserController.PostParseFile)
 
-	log.Fatal(http.ListenAndServe(":3333", nil))
+	log.Fatal(http.ListenAndServe("0.0.0.0:3333", nil))
 	fmt.Printf("Server on port 3333\n")
 }

@@ -1,0 +1,52 @@
+@layer reset, theme, components;
+
+@layer theme {
+  :root {
+    --code-bg: #f4f3ec;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --code-bg: #1f2028;
+    }
+  }
+}
+
+@layer reset {
+  :root {
+    color-scheme: light dark;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    margin: 0;
+  }
+
+  code {
+    white-space: break-spaces;
+    text-align: left;
+    font-family: var(--mono);
+    display: inline-flex;
+    border-radius: 4px;
+    color: var(--text-h);
+    font-size: 15px;
+    line-height: 135%;
+    padding: 4px 8px;
+    background: var(--code-bg);
+  }
+
+
+  #app {
+    width: 1126px;
+    max-width: 100%;
+    margin: 0 auto;
+    text-align: center;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+  }
+}
