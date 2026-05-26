@@ -1,0 +1,64 @@
+@layer components {
+
+    .wrapper {
+        display: grid;
+        gap: 1rem;
+        align-content: start;
+
+
+        .drop-container {
+            --_padding: 20px;
+
+            display: flex;
+            gap: 10px;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+
+            padding: var(--_padding);
+            border-radius: var(--border-radius);
+            border: 1px dashed;
+            cursor: pointer;
+            transition: background 100ms ease;
+
+            &:hover,
+            &.drag-active {
+                background: var(--code-bg);
+            }
+
+            .drop-title {
+                font-size: var(--font-size-base);
+                font-weight: bold;
+                text-align: center;
+            }
+
+            input[type=file] {
+
+                --_padding: 5px;
+
+                width: min(100%, 350px);
+                padding: var(--_padding);
+                border-radius: calc(var(--border-radius) + var(--_padding));
+                border: 1px solid #555;
+                cursor: pointer;
+            }
+
+            input[type=file]::file-selector-button {
+                margin-right: 1rem;
+                background: #084cdf;
+                color: #fff;
+                transition: background .2s ease-in-out;
+            }
+
+            input[type=file]::file-selector-button:hover {
+                background: #0d45a5;
+            }
+        }
+
+        >button {
+            justify-self: end;
+
+        }
+    }
+
+}

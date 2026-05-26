@@ -1,12 +1,15 @@
 import './style.css'
-import { setupParser } from './parser'
+import { exportFile, FileInput, setupParser } from './components/fileInput/fileInput'
+import { changeTheme, Footer } from './components/footer/footer'
+import { Header } from './components/header/header'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <h1>Golang Parser</h1>
-    <input id="inputFile" type="file" id="fileInput" />
-
-  <code id="resultDiv">
-  </code>
-
+  ${Header()}
+  ${FileInput()}
+  ${Footer()}
 `
-setupParser(document.querySelector<HTMLInputElement>('#inputFile')!, document.querySelector<HTMLDivElement>('#resultDiv')!)
+
+
+changeTheme(document.querySelector<HTMLInputElement>('#theme')!)
+setupParser(document.querySelector<HTMLInputElement>('#fileInput')!, document.querySelector<HTMLLabelElement>('#dropcontainer')!, document.querySelector<HTMLDivElement>('#resultDiv')!)
+exportFile(document.querySelector<HTMLButtonElement>('#downloadCodeBase')!, document.querySelector<HTMLDivElement>('#resultDiv')!)

@@ -1,52 +1,179 @@
-@layer reset, theme, components;
+@layer reset, base, theme, components;
 
-@layer theme {
-  :root {
-    --code-bg: #f4f3ec;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --code-bg: #1f2028;
-    }
-  }
-}
 
 @layer reset {
+
+  *,
+  *::after,
+  *::before {
+    box-sizing: border-box;
+  }
+
   :root {
-    color-scheme: light dark;
+
+    color-scheme: light;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+
+    interpolate-size: allow-keywords;
+
+    --font-size-sm: clamp(0.5208rem, 0.4394rem + 0.3621vw, 0.72rem);
+    --font-size-base: clamp(0.625rem, 0.5125rem + 0.5vw, 0.9rem);
+    --font-size-md: clamp(0.75rem, 0.5966rem + 0.6818vw, 1.125rem);
+    --font-size-lg: clamp(0.9rem, 0.6929rem + 0.9205vw, 1.4063rem);
+    --font-size-xl: clamp(1.08rem, 0.8027rem + 1.2324vw, 1.7578rem);
+    --font-size-xxl: clamp(1.296rem, 0.9273rem + 1.6387vw, 2.1973rem);
+    --font-size-xxxl: clamp(1.5552rem, 1.0678rem + 2.1661vw, 2.7466rem);
+    --font-size-xxxxl: clamp(1.8662rem, 1.2252rem + 2.8491vw, 3.4332rem);
+
+    --max-width: 105ch;
+
+    --border-radius: .5rem;
+    --cv-border-radius: 3px;
+    --body-padding: 1rem;
+
+    --code-bg: light-dark(#f4f3ec, #1f2028);
+  }
+
+  html {
+    hanging-punctuation: first last;
   }
 
   body {
+    font-size: 1.125rem;
+    display: grid;
+    place-items: center;
+    background-color: var(--background);
     margin: 0;
+
+    font-family: 'EBGaramondPDF', serif;
+    line-height: 1.35;
+    accent-color: var(--primary);
+    caret-color: var(--primary);
+    color: var(--on-surface);
   }
+
+  body> :is(header, footer),
+  section,
+  main,
+  article {
+    container-type: inline-size;
+  }
+
+  #app {
+    width: 100%;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    text-align: center;
+    min-height: 100svh;
+
+    box-sizing: border-box;
+
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 1rem;
+    padding: var(--body-padding);
+
+  }
+}
+
+@layer base {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--on-surface);
+    text-wrap: balance;
+    margin: 0px;
+    text-box-trim: trim-both;
+    text-box-edge: cap alphabetic;
+  }
+
+  h1 {
+    --_font-size: var(--font-size-xxl);
+    margin-bottom: 0.5em;
+    font-size: var(--_font-size);
+    font-weight: 900;
+    line-height: calc(var(--_font-size) * 1.1);
+    letter-spacing: -2px;
+  }
+
+  h2 {
+    --_font-size: var(--font-size-xl);
+    place-self: start;
+    font-size: var(--_font-size);
+    font-weight: 600;
+    line-height: calc(var(--_font-size) * 1.1);
+    letter-spacing: -2px;
+    margin-bottom: 0.5em;
+  }
+
+  h3 {
+    --_font-size: var(--font-size-lg);
+    font-size: var(--_font-size);
+    font-weight: 400;
+    line-height: calc(var(--_font-size) * 1.1);
+    margin-bottom: 0.5em;
+  }
+
+  p,
+  li,
+  figcaption {
+    text-wrap: stable;
+    text-wrap: pretty;
+  }
+
+  p {
+    font-size: var(--font-size-base);
+    line-height: 20px;
+    margin-bottom: 0.5em;
+  }
+
 
   code {
     white-space: break-spaces;
-    text-align: left;
-    font-family: var(--mono);
-    display: inline-flex;
-    border-radius: 4px;
-    color: var(--text-h);
-    font-size: 15px;
+    unicode-bidi: embed;
+
+    display: block;
+    overflow: auto;
+    max-height: 80ch;
+
+    font-family: monospace;
+    font-size: var(--font-size-base);
     line-height: 135%;
-    padding: 4px 8px;
+    text-align: left;
+    padding: 1rem;
+
+    border-radius: var(--border-radius);
     background: var(--code-bg);
   }
 
 
-  #app {
-    width: 1126px;
-    max-width: 100%;
-    margin: 0 auto;
-    text-align: center;
-    min-height: 100svh;
-    display: flex;
-    flex-direction: column;
-    box-sizing: border-box;
+  button,
+  input[type=file]::file-selector-button {
+
+    --_padding-block: 0.5rem;
+    --_padding-inline: calc(var(--_padding-block) * 2);
+
+    border-radius: var(--border-radius);
+    border: none;
+    cursor: pointer;
+
+    padding-inline: var(--_padding-inline);
+    padding-block: var(--_padding-block);
+
+  }
+
+
+}
+
+@layer theme {
+  :root:has(#theme:checked) {
+    color-scheme: dark;
   }
 }
