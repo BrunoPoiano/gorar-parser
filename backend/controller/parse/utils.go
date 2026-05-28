@@ -10,10 +10,12 @@ import (
 func parseUrlValues(multipart *multipart.Form) (*multipart.FileHeader, parsed.ParsedOptions, error) {
 
 	options := parsed.ParsedOptions{
-		RemoveComments:   false,
-		RemoveEmptyLines: false,
-		RemoveDirectory:  false,
-		RemoveReadMe:     false,
+		RemoveComments:       false,
+		RemoveEmptyLines:     false,
+		RemoveDirectory:      false,
+		RemoveReadMe:         false,
+		RemoveDotFiles:       false,
+		RemoveGitIgnoreFiles: false,
 	}
 	files := multipart.File["file"]
 
@@ -59,6 +61,26 @@ func parseUrlValues(multipart *multipart.Form) (*multipart.FileHeader, parsed.Pa
 		}
 
 		options.RemoveReadMe = remove_readme
+	}
+
+	values = multipart.Value["remove_dot_files"]
+	if len(values) > 0 {
+		remove_dot_files, err := strconv.ParseBool(values[0])
+		if err != nil {
+			return nil, options, fmt.Errorf("invalid remove_dot_files")
+		}
+
+		options.RemoveDotFiles = remove_dot_files
+	}
+
+	values = multipart.Value["remove_gitignore_files"]
+	if len(values) > 0 {
+		remove_gitignore_files, err := strconv.ParseBool(values[0])
+		if err != nil {
+			return nil, options, fmt.Errorf("invalid remove_gitignore_files")
+		}
+
+		options.RemoveGitIgnoreFiles = remove_gitignore_files
 	}
 
 	return files[0], options, nil

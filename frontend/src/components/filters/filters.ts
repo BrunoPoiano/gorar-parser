@@ -31,6 +31,8 @@ export function setupFilters(resultDiv: HTMLDivElement) {
     for (const el of filtersList) {
         const element = document.querySelector<HTMLInputElement>(`#${el.id}`)
 
+        if (!element) continue
+
         element.checked = options[el.id]
         element.addEventListener("change", async () => {
             options[el.id] = !options[el.id]

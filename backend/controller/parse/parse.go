@@ -7,10 +7,21 @@ import (
 	"net/http"
 )
 
+var allowedOrigins = map[string]bool{
+	"http://0.0.0.0:3333":   true,
+	"http://0.0.0.0:5173":   true,
+	"http://localhost:5173": true,
+	"http://localhost:3333": true,
+}
+
 func PostParseFile(w http.ResponseWriter, r *http.Request) {
 
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Max-Age", "15")
+	origin := r.Header.Get("Origin")
+
+	if allowedOrigins[origin] {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Vary", "Origin")
+	}
 
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {

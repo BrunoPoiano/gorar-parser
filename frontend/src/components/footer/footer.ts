@@ -6,10 +6,10 @@ export function Footer() {
   	    <span> ${new Date().getFullYear()} | Bruno |
 			    <a href="https://github.com/BrunoPoiano/cv-maker">Source Code</a> |
           <label for="theme">
-          <input type="checkbox" id="theme"  />
+            <input type="checkbox" id="theme"  />
             Dark Mode
           </label>
-          </span>
+        </span>
     </footer>
     `
 }

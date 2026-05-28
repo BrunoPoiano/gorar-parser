@@ -20,9 +20,11 @@ export function FileInput() {
 export function exportFile(downloadButton: HTMLButtonElement, resultDiv: HTMLDivElement) {
 
     downloadButton.addEventListener("click", () => {
-        const blob = new Blob([resultDiv.innerHTML, null], {
+        const blob = new Blob([resultDiv.innerHTML], {
             type: "text"
         })
+
+        if (!files || !files.value || !files.value[0]) return
 
         const url = URL.createObjectURL(blob)
         const name = files.value[0].name.replaceAll(" ", "_")
@@ -45,6 +47,9 @@ export async function setupParser(fileInput: HTMLInputElement, dropContainer: HT
     dropContainer.addEventListener("drop", async (e) => {
         e.preventDefault()
         dropContainer.classList.remove("drag-active")
+
+        if (!e.dataTransfer) return
+
         fileInput.files = e.dataTransfer.files
         files.value = e.dataTransfer.files
         await CheckFiles(resultDiv)
