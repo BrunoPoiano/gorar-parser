@@ -1,0 +1,82 @@
+@layer components {
+    .filters {
+        display: flex;
+        gap: 1rem;
+
+        --_swith-height: 24px;
+        --_bg: red;
+
+        .switch-wrapper {
+            display: flex;
+            gap: .5rem;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: var(--_swith-height);
+
+            input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+
+            .slider {
+                position: absolute;
+                cursor: pointer;
+                inset: 0;
+                background-color: var(--code-bg);
+                -webkit-transition: 400ms ease-in-out;
+                transition: 400ms ease-in-out;
+
+                &:before {
+                    position: absolute;
+                    content: '';
+                    height: calc(var(--_swith-height) - 10px);
+                    background-color: var(--_bg);
+                    aspect-ratio: 1;
+                    left: 4px;
+                    bottom: 5px;
+                    -webkit-transition: 400ms ease-in-out;
+                    transition: 400ms ease-in-out;
+                }
+            }
+
+            &:hover:not(:disabled) input:checked+.slider {
+                --hover-bg-adjusted: light-dark(hsl(from var(--_bg) h 80% calc(l - 8)),
+                        hsl(from var(--_bg) h s calc(l + 15)));
+
+                background: var(--hover-bg-adjusted);
+            }
+
+            input:checked+.slider {
+                background-color: var(--_bg);
+            }
+
+            input:focus+.slider {
+                box-shadow: 0 0 1px var(--_bg);
+            }
+
+            input:checked+.slider:before {
+                --_new-position: calc(var(--_swith-height) + 15px);
+                -webkit-transform: translateX(var(--_new-position));
+                -ms-transform: translateX(var(--_new-position));
+                transform: translateX(var(--_new-position));
+
+                background-color: white;
+            }
+
+            .slider.round {
+                border-radius: var(--border-radius);
+            }
+
+            .slider.round:before {
+                border-radius: 50%;
+            }
+        }
+
+    }
+
+}

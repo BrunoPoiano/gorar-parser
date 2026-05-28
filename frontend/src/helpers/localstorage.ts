@@ -1,6 +1,6 @@
 
 type LocalStorageProps<T> = {
-    key: string
+    key: "theme" | "filters" | string & {}
     initialValue: T
 }
 

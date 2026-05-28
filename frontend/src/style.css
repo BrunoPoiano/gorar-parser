@@ -66,13 +66,11 @@
     width: 100%;
     max-width: var(--max-width);
     margin: 0 auto;
-    text-align: center;
     min-height: 100svh;
 
-    box-sizing: border-box;
 
     display: grid;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto auto 1fr auto;
     gap: 1rem;
     padding: var(--body-padding);
 
@@ -169,6 +167,14 @@
 
   }
 
+  header {
+    text-align: center;
+  }
+
+  footer {
+    text-align: center;
+    font-size: var(--font-size-base);
+  }
 
 }
 

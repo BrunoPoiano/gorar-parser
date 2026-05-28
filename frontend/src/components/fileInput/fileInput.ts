@@ -1,4 +1,6 @@
 
+import { CheckFiles } from '../../requests/file'
+import { files } from '../store/file'
 import './style.css'
 
 export function FileInput() {
@@ -23,10 +25,11 @@ export function exportFile(downloadButton: HTMLButtonElement, resultDiv: HTMLDiv
         })
 
         const url = URL.createObjectURL(blob)
-
+        const name = files.value[0].name.replaceAll(" ", "_")
         const link = document.createElement('a')
+
         link.href = url
-        link.download = `code_base_${new Date().toISOString()}.txt`
+        link.download = `${name}_${new Date().toISOString()}.txt`
         link.click()
 
         URL.revokeObjectURL(url)
@@ -43,33 +46,13 @@ export async function setupParser(fileInput: HTMLInputElement, dropContainer: HT
         e.preventDefault()
         dropContainer.classList.remove("drag-active")
         fileInput.files = e.dataTransfer.files
-        await CheckFiles(e.dataTransfer.files, resultDiv)
+        files.value = e.dataTransfer.files
+        await CheckFiles(resultDiv)
     })
 
-    fileInput.addEventListener('change', async () => await CheckFiles(fileInput.files, resultDiv))
-}
-
-async function CheckFiles(files: FileList | null, resultDiv: HTMLDivElement) {
-
-    if (!files || files.length === 0) {
-        return
-    }
-
-    const value = await SendFile(files[0])
-
-    resultDiv.innerHTML = value ? value : ""
-}
-
-async function SendFile(file: File) {
-
-    const bodyFormData = new FormData();
-    bodyFormData.append("file", file);
-
-    return await fetch("http://localhost:3333/parse", {
-        method: "POST",
-        body: bodyFormData
-    }).then(response => response.text())
-        .then(data => data)
-        .catch(error => "Error sending file:" + error);
+    fileInput.addEventListener('change', async () => {
+        files.value = fileInput.files
+        await CheckFiles(resultDiv)
+    })
 }
 

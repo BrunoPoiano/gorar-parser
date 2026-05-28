@@ -18,21 +18,20 @@ func PostParseFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	files := r.MultipartForm.File["file"]
-
-	if len(files) == 0 {
-		http.Error(w, "No files uploaded", http.StatusBadRequest)
+	file, options, err := parseUrlValues(r.MultipartForm)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	file, err := parsed.Parsed(files[0])
+	parsedFile, err := parsed.Parsed(file, options)
 	if err != nil {
 		http.Error(w, "Error processing file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, file.Name()))
 
-	defer file.Close()
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, parsedFile.Name()))
+	defer parsedFile.Close()
 
-	io.Copy(w, file)
+	io.Copy(w, parsedFile)
 }

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	parserController "main/controller"
+	parserController "main/controller/parse"
 	"net/http"
 )
 

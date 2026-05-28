@@ -18,7 +18,7 @@ var comments = map[string]bool{
 	"//": true,
 }
 
-func Parsed(multipartFile *multipart.FileHeader) (*os.File, error) {
+func Parsed(multipartFile *multipart.FileHeader, options ParsedOptions) (*os.File, error) {
 
 	fileName := string(multipartFile.Filename)
 	if filepath.Ext(fileName) != ".zip" {
@@ -54,17 +54,19 @@ func Parsed(multipartFile *multipart.FileHeader) (*os.File, error) {
 		panic(err)
 	}
 
-	file.WriteString("=== Directory structure ===\n")
+	if !options.RemoveDirectory {
+		file.WriteString("=== Directory structure ===\n")
 
-	for _, item := range items.File {
-		if item.FileInfo().IsDir() || strings.Contains(item.Name, "/.") {
-			continue
-		}
+		for _, item := range items.File {
+			if item.FileInfo().IsDir() || strings.Contains(item.Name, "/.") {
+				continue
+			}
 
-		_, err = file.WriteString(item.Name + "\n")
-		if err != nil {
-			file.Close()
-			return nil, err
+			_, err = file.WriteString(item.Name + "\n")
+			if err != nil {
+				file.Close()
+				return nil, err
+			}
 		}
 	}
 
@@ -97,6 +99,10 @@ func Parsed(multipartFile *multipart.FileHeader) (*os.File, error) {
 				}
 			}
 
+			if options.RemoveReadMe && (strings.Contains(item.Name, "readme") || strings.Contains(item.Name, "README")) {
+				return
+			}
+
 			_, err = file.WriteString("\n=== " + item.Name + " ===\n")
 			if err != nil {
 				return
@@ -107,13 +113,13 @@ func Parsed(multipartFile *multipart.FileHeader) (*os.File, error) {
 			for scanner.Scan() {
 				line := (scanner.Text())
 
-				if line == "" {
+				if options.RemoveEmptyLines && line == "" {
 					continue
 				}
 
-				if strings.HasPrefix(line, "//") ||
+				if options.RemoveComments && (strings.HasPrefix(line, "//") ||
 					strings.HasPrefix(line, "# ") ||
-					strings.HasPrefix(line, "##") {
+					strings.HasPrefix(line, "##")) {
 					continue
 				}
 
