@@ -24,11 +24,11 @@ async function SendFile(file: File, options?: Options) {
         }
     }
 
-    return await fetch("http://localhost:3333/parse", {
+    return await fetch("http://localhost:4747/parse", {
         method: "POST",
         body: bodyFormData
     }).then(response => response.text())
         .then(data => data)
-        .catch(error => "Error parsing file");
+        .catch(_ => "Error parsing file");
 }
 
