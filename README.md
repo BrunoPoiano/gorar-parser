@@ -44,7 +44,7 @@ Gorar Parser is a full-stack application that allows you to upload a ZIP archive
 1. Clone the repository:
 ```bash
 git clone https://github.com/BrunoPoiano/gorar-parser.git
-cd go-parser
+cd gorar-parser
 ```
 
 2. **Frontend Setup**:
