@@ -12,10 +12,10 @@ func main() {
 	mux.Handle("/", http.FileServer(http.Dir("./frontend/dist")))
 
 	server := http.Server{
-		Addr:    "0.0.0.0:3333",
+		Addr:    "0.0.0.0:4747",
 		Handler: mux,
 	}
 
-	println("Server on port 3333")
+	println("Server on port 4747")
 	log.Fatal(server.ListenAndServe())
 }

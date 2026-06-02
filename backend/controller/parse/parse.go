@@ -8,10 +8,10 @@ import (
 )
 
 var allowedOrigins = map[string]bool{
-	"http://0.0.0.0:3333":   true,
+	"http://0.0.0.0:4747":   true,
 	"http://0.0.0.0:5173":   true,
 	"http://localhost:5173": true,
-	"http://localhost:3333": true,
+	"http://localhost:4747": true,
 }
 
 func PostParseFile(w http.ResponseWriter, r *http.Request) {

@@ -31,7 +31,7 @@ Gorar Parser is a full-stack application that allows you to upload a ZIP archive
 
 ### Backend
 - **Go 1.26.3** - High-performance backend server
-- **Standard Library** - No external dependencies (except go-unarr)
+- **Standard Library** - No external dependencies
 
 ## Getting Started
 
@@ -39,24 +39,11 @@ Gorar Parser is a full-stack application that allows you to upload a ZIP archive
 - Node.js/Bun (for frontend)
 - Go 1.26.3+ (for backend)
 
-### Installation
+### Deploy
 
-1. Clone the repository:
+Docker:
 ```bash
-git clone https://github.com/BrunoPoiano/gorar-parser.git
-cd gorar-parser
-```
-
-2. **Frontend Setup**:
-```bash
-cd frontend
-npm install  # or bun install
-```
-
-3. **Backend Setup**:
-```bash
-cd backend
-go mod download
+docker run -d -p 4747:4747 --name gorar-parser docker.io/brunopoiano/gorar-parser:latest
 ```
 
 ### Development
@@ -72,7 +59,7 @@ npm run dev
 ```bash
 cd backend
 go run main.go
-# Server runs on http://localhost:3333
+# Server runs on http://localhost:4747
 ```
 
 ### Production Build
@@ -93,32 +80,11 @@ go build -o main main.go
 
 ## Usage
 
-1. Open the application in your browser (http://localhost:3333)
+1. Open the application in your browser (http://localhost:4747)
 2. Select or drag-and-drop a ZIP file containing your codebase
 3. Configure your preferred filters using the toggle switches
 4. The parsed content appears in the code preview area
 5. Click "Download" to save the parsed content as a text file
-
-## Project Structure
-
-```
-go-parser/
-├── frontend/
-│   ├── src/
-│   │   ├── components/     # UI components
-│   │   ├── helpers/        # Utility functions
-│   │   ├── requests/       # API calls
-│   │   ├── types.ts        # TypeScript types
-│   │   └── main.ts         # Entry point
-│   ├── index.html
-│   ├── package.json
-│   └── tsconfig.json
-└── backend/
-    ├── controller/parse/   # Request handlers
-    ├── parsed/             # Core parsing logic
-    ├── main.go            # Server entry point
-    └── go.mod
-```
 
 ## API Endpoints
 
