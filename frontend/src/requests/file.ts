@@ -19,9 +19,9 @@ async function SendFile(file: File, options?: Options) {
     bodyFormData.append("file", file);
 
     if (options) {
-        Object.entries(options).forEach((el) => {
+        for (const el of Object.entries(options)) {
             bodyFormData.append(el[0], el[1].toString())
-        })
+        }
     }
 
     return await fetch("http://localhost:3333/parse", {
@@ -29,6 +29,6 @@ async function SendFile(file: File, options?: Options) {
         body: bodyFormData
     }).then(response => response.text())
         .then(data => data)
-        .catch(error => "Error sending file:" + error);
+        .catch(error => "Error parsing file");
 }
 

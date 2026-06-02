@@ -8,7 +8,7 @@ export const filtersList: Array<FiltersList> = [
     },
     {
         id: "remove_directory",
-        label: "Remove Directory"
+        label: "Remove Directory Structure"
     },
     {
         id: "remove_empty_lines",
@@ -17,5 +17,7 @@ export const filtersList: Array<FiltersList> = [
     {
         id: "remove_readme",
         label: "Remove Readme"
-    }
+    },
+    { id: "remove_dot_files", label: "Remove .files" },
+    { id: "remove_gitignore_files", label: "Remove gitIgnore files" }
 ]

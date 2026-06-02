@@ -4,7 +4,7 @@ export function Footer() {
   return `
     <footer>
   	    <span> ${new Date().getFullYear()} | Bruno |
-			    <a href="https://github.com/BrunoPoiano/cv-maker">Source Code</a> |
+			    <a href="https://github.com/BrunoPoiano/gorar-parser">Source Code</a> |
           <label for="theme">
             <input type="checkbox" id="theme"  />
             Dark Mode

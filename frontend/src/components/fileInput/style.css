@@ -1,6 +1,10 @@
 @layer components {
+    code {
+        grid-area: code;
+    }
 
     .wrapper {
+        grid-area: main;
         display: grid;
         gap: 1rem;
         align-content: start;
@@ -8,7 +12,7 @@
 
         .drop-container {
             --_padding: 20px;
-
+            --_bg: var(--secondary);
             display: flex;
             gap: 10px;
             flex-direction: column;
@@ -23,7 +27,7 @@
 
             &:hover,
             &.drag-active {
-                background: var(--code-bg);
+                background: var(--primary);
             }
 
             .drop-title {
@@ -45,13 +49,16 @@
 
             input[type=file]::file-selector-button {
                 margin-right: 1rem;
-                background: #084cdf;
+                background: var(--secondary);
                 color: #fff;
                 transition: background .2s ease-in-out;
             }
 
             input[type=file]::file-selector-button:hover {
-                background: #0d45a5;
+                --hover-bg-adjusted: light-dark(hsl(from var(--_bg) h 80% calc(l - 8)),
+                        hsl(from var(--_bg) h s calc(l + 15)));
+
+                background: var(--hover-bg-adjusted);
             }
         }
 

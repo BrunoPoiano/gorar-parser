@@ -11,9 +11,9 @@ export function FileInput() {
         <small>or</small>
         <input type="file" accept=".zip" id="fileInput" required>
         </label>
-        <code id="resultDiv"></code>
         <button id="downloadCodeBase">Download</button>
-    </div>
+        </div>
+    <code id="resultDiv"></code>
     `
 }
 
@@ -50,8 +50,7 @@ export async function setupParser(fileInput: HTMLInputElement, dropContainer: HT
 
         if (!e.dataTransfer) return
 
-        fileInput.files = e.dataTransfer.files
-        files.value = e.dataTransfer.files
+        fileInput.files, files.value = e.dataTransfer.files
         await CheckFiles(resultDiv)
     })
 

@@ -34,7 +34,9 @@
     --cv-border-radius: 3px;
     --body-padding: 1rem;
 
-    --code-bg: light-dark(#f4f3ec, #1f2028);
+    --primary: light-dark(#f4f3ec, #2f3245);
+
+    --secondary: #084cdf
   }
 
   html {
@@ -45,14 +47,13 @@
     font-size: 1.125rem;
     display: grid;
     place-items: center;
-    background-color: var(--background);
     margin: 0;
+    padding: calc(var(--body-padding) / 2) var(--body-padding);
+
 
     font-family: 'EBGaramondPDF', serif;
     line-height: 1.35;
-    accent-color: var(--primary);
-    caret-color: var(--primary);
-    color: var(--on-surface);
+
   }
 
   body> :is(header, footer),
@@ -70,10 +71,31 @@
 
 
     display: grid;
-    grid-template-rows: auto auto 1fr auto;
+    align-items: start;
     gap: 1rem;
-    padding: var(--body-padding);
+    grid-template-areas:
+      'header'
+      'filter'
+      'main'
+      'code'
+      'footer';
 
+    grid-template-rows: auto auto auto 1fr auto;
+
+
+  }
+
+  @media screen and (min-width: 800px) {
+    #app {
+      grid-template-areas:
+        'header header'
+        'filter main'
+        'code code'
+        'footer footer';
+
+      grid-template-rows: auto auto 1fr auto;
+      grid-template-columns: auto 1fr;
+    }
   }
 }
 
@@ -132,6 +154,10 @@
     margin-bottom: 0.5em;
   }
 
+  span {
+    font-size: var(--font-size-md);
+  }
+
 
   code {
     white-space: break-spaces;
@@ -148,7 +174,7 @@
     padding: 1rem;
 
     border-radius: var(--border-radius);
-    background: var(--code-bg);
+    background: var(--primary);
   }
 
 
@@ -168,12 +194,15 @@
   }
 
   header {
+    grid-area: header;
     text-align: center;
   }
 
   footer {
+    grid-area: footer;
     text-align: center;
     font-size: var(--font-size-base);
+
   }
 
 }

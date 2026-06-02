@@ -18,6 +18,14 @@ var comments = map[string]bool{
 	"//": true,
 }
 
+var filesToIgnore = []string{
+	"node_modules",
+	"vendor",
+	"__pycache__",
+	".DS_Store",
+	"/.git/",
+}
+
 func Parsed(multipartFile *multipart.FileHeader, options ParsedOptions) (*os.File, error) {
 
 	fileName := string(multipartFile.Filename)
@@ -64,7 +72,7 @@ func Parsed(multipartFile *multipart.FileHeader, options ParsedOptions) (*os.Fil
 		file.WriteString("=== Directory structure ===\n")
 
 		for _, item := range items.File {
-			if item.FileInfo().IsDir() || strings.Contains(item.Name, "/.git/") {
+			if item.FileInfo().IsDir() {
 				continue
 			}
 
@@ -195,7 +203,6 @@ func findGitIgnore(items *zip.ReadCloser) []string {
 					continue
 				}
 
-				println(line)
 				gitignore = append(gitignore, line)
 			}
 		}
@@ -218,6 +225,12 @@ func ignoreFile(files []string, name string) bool {
 
 		if strings.HasSuffix(name, item) {
 			return strings.Contains(name, item)
+		}
+	}
+
+	for _, filesIgnore := range filesToIgnore {
+		if strings.Contains(name, filesIgnore) {
+			return true
 		}
 	}
 

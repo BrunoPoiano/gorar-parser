@@ -1,10 +1,12 @@
 @layer components {
     .filters {
-        display: flex;
-        gap: 1rem;
+        grid-area: filter;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+        gap: .5rem 1rem;
 
         --_swith-height: 24px;
-        --_bg: red;
+        --_bg: var(--secondary);
 
         .switch-wrapper {
             display: flex;
@@ -27,7 +29,7 @@
                 position: absolute;
                 cursor: pointer;
                 inset: 0;
-                background-color: var(--code-bg);
+                background-color: var(--primary);
                 -webkit-transition: 400ms ease-in-out;
                 transition: 400ms ease-in-out;
 
