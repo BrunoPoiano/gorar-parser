@@ -24,7 +24,7 @@ async function SendFile(file: File, options?: Options) {
         }
     }
 
-    return await fetch("http://localhost:4747/parse", {
+    return await fetch(`http://${window.location.hostname}:4747/parse`, {
         method: "POST",
         body: bodyFormData
     }).then(response => response.text())
