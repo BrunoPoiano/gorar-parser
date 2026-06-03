@@ -1,6 +1,6 @@
 
-import { CheckFiles } from '../../requests/file'
-import { files } from '../store/file'
+import { debouncedCheckFiles } from '../../requests/file'
+import { fileParsed, files } from '../store/constants'
 import './style.css'
 
 export function FileInput() {
@@ -13,14 +13,18 @@ export function FileInput() {
         </label>
         <button id="downloadCodeBase">Download</button>
         </div>
-    <code id="resultDiv"></code>
+        <div>
+        </div>
+        <div  id="resultContent">
+            <code id="resultCode"></code>
+        </div>
     `
 }
 
-export function exportFile(downloadButton: HTMLButtonElement, resultDiv: HTMLDivElement) {
+export function exportFile(downloadButton: HTMLButtonElement) {
 
     downloadButton.addEventListener("click", () => {
-        const blob = new Blob([resultDiv.innerHTML], {
+        const blob = new Blob([fileParsed.value], {
             type: "text"
         })
 
@@ -38,7 +42,7 @@ export function exportFile(downloadButton: HTMLButtonElement, resultDiv: HTMLDiv
     })
 }
 
-export async function setupParser(fileInput: HTMLInputElement, dropContainer: HTMLLabelElement, resultDiv: HTMLDivElement) {
+export async function setupParser(fileInput: HTMLInputElement, dropContainer: HTMLLabelElement) {
 
     dropContainer.addEventListener("dragover", (e) => e.preventDefault(), false)
     dropContainer.addEventListener("dragenter", () => dropContainer.classList.add("drag-active"))
@@ -51,12 +55,12 @@ export async function setupParser(fileInput: HTMLInputElement, dropContainer: HT
         if (!e.dataTransfer) return
 
         fileInput.files, files.value = e.dataTransfer.files
-        await CheckFiles(resultDiv)
+        await debouncedCheckFiles()
     })
 
     fileInput.addEventListener('change', async () => {
         files.value = fileInput.files
-        await CheckFiles(resultDiv)
+        await debouncedCheckFiles()
     })
 }
 

@@ -1,5 +1,5 @@
 import { saveDataToLocalStorage } from "../../helpers/localstorage"
-import { CheckFiles } from "../../requests/file"
+import { debouncedCheckFiles } from "../../requests/file"
 import { options } from "../store/filters"
 import { filtersList } from "./filtersList"
 import "./style.css"
@@ -27,7 +27,7 @@ export function Filters() {
     `
 }
 
-export function setupFilters(resultDiv: HTMLDivElement) {
+export function setupFilters() {
     for (const el of filtersList) {
         const element = document.querySelector<HTMLInputElement>(`#${el.id}`)
 
@@ -37,7 +37,7 @@ export function setupFilters(resultDiv: HTMLDivElement) {
         element.addEventListener("change", async () => {
             options[el.id] = !options[el.id]
             saveDataToLocalStorage({ key: "filters", initialValue: options })
-            await CheckFiles(resultDiv)
+            await debouncedCheckFiles()
         })
     }
 }

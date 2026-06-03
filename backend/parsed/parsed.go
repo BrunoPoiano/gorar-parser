@@ -24,6 +24,9 @@ var filesToIgnore = []string{
 	"__pycache__",
 	".DS_Store",
 	"/.git/",
+	"/dist/",
+	"package-lock.json",
+	"bun.lock",
 }
 
 func Parsed(multipartFile *multipart.FileHeader, options ParsedOptions) (*os.File, error) {

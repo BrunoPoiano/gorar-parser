@@ -13,13 +13,11 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
 
 changeTheme(document.querySelector<HTMLInputElement>('#theme')!)
-setupFilters(document.querySelector<HTMLDivElement>('#resultDiv')!)
+setupFilters()
 setupParser(
   document.querySelector<HTMLInputElement>('#fileInput')!,
   document.querySelector<HTMLLabelElement>('#dropcontainer')!,
-  document.querySelector<HTMLDivElement>('#resultDiv')!
 )
 exportFile(
   document.querySelector<HTMLButtonElement>('#downloadCodeBase')!,
-  document.querySelector<HTMLDivElement>('#resultDiv')!
 )
