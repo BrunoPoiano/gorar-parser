@@ -1,6 +1,6 @@
 @layer components {
 
-    #resultContent {
+    #resultDiv {
         grid-area: code;
         position: relative;
 

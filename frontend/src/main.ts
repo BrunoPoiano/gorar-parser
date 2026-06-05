@@ -19,5 +19,5 @@ setupParser(
   document.querySelector<HTMLLabelElement>('#dropcontainer')!,
 )
 exportFile(
-  document.querySelector<HTMLButtonElement>('#downloadCodeBase')!,
+  document.querySelector<HTMLButtonElement>('#downloadCodeButton')!,
 )

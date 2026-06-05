@@ -7,28 +7,28 @@ export function FileInput() {
     return `
     <div class="wrapper">
         <label for="fileInput" class="drop-container" id="dropcontainer">
-        <span class="drop-title">Drop files here</span>
-        <small>or</small>
-        <input type="file" accept=".zip" id="fileInput" required>
+            <span class="drop-title">Drop files here</span>
+            <small>or</small>
+            <input type="file" accept=".zip" id="fileInput" required>
         </label>
-        <button id="downloadCodeBase">Download</button>
-        </div>
-        <div>
-        </div>
-        <div  id="resultContent">
-            <code id="resultCode"></code>
-        </div>
+        <button id="downloadCodeButton" disabled>Download</button>
+    </div>
+    <div id="resultDiv">
+        <code id="resultCode"></code>
+    </div>
     `
 }
 
 export function exportFile(downloadButton: HTMLButtonElement) {
-
     downloadButton.addEventListener("click", () => {
+
+        if (!files || !files.value) {
+            return
+        }
+
         const blob = new Blob([fileParsed.value], {
             type: "text"
         })
-
-        if (!files || !files.value || !files.value[0]) return
 
         const url = URL.createObjectURL(blob)
         const name = files.value[0].name.replaceAll(" ", "_")
